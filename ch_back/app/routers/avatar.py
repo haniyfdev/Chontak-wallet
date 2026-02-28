@@ -54,7 +54,7 @@ async def avatar_create(user_id: UUID,
         os.makedirs(upload_dir)
     
     result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    user = result.unique().scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail="Bunday user mavjud emas")
@@ -104,7 +104,7 @@ async def del_avatar(user_id: UUID,
                      db: AsyncSession = Depends(get_db)):
     
     result = await db.execute(select(Avatar).where(Avatar.user_id == user_id))
-    avatar = result.scalar_one_or_none()
+    avatar = result.unique().scalar_one_or_none()
     if not avatar:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Zotan avataringiz yo'q")

@@ -7,7 +7,7 @@ import enum
 
 
 # -------- Enum
-class StatusTransaction(enum.Enum):
+class StatusTransaction(str, enum.Enum):
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
@@ -41,6 +41,7 @@ class TransactionResponse(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True # fro alias
+        use_enum_values = True
 
 # -------- Response
 class TransactionListResponse(BaseModel):
@@ -58,11 +59,12 @@ class DashboardResponse(BaseModel):
     total_balance: Decimal
     sender_transactions: Decimal
     receiver_transactions: Decimal
+    total_commission: Decimal
     total_count: int
     success_transfers_count: int
     failed_transfers_count: int
-    success_percent: Decimal
-    failed_percent: Decimal
+    success_percent: str
+    failed_percent: str
 
     class Config:
         from_attributes = True

@@ -37,7 +37,7 @@ async def registration(uc: UserCreate,
     return new_user
 
 # ------------------------------ 2.endpoint
-@router.post("/refresh", response_model=TokenRefreshResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/refresh", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def refresh_access_token(
     rt: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
@@ -74,7 +74,7 @@ async def login(data: OAuth2PasswordRequestForm = Depends(),
                 db: AsyncSession = Depends(get_db),
                 redis: aioredis.Redis = Depends(get_redis)):
     result = await db.execute(select(User).where(User.phone_number == data.username)) #phone_number
-    user = result.scalar_one_or_none()
+    user = result.unique().scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bunday User mavjud emas")
     
@@ -105,7 +105,7 @@ async def get_profile(current_user: User = Depends(get_current_user)):
 
 # ------------------------------ 5.endpoint
 @router.patch("/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
-async def get_profile_info(uu: UserUpdate, 
+async def update_profile_info(uu: UserUpdate, 
                            current_user: User = Depends(get_current_user), 
                            db: AsyncSession = Depends(get_db)):
 

@@ -7,6 +7,9 @@ from decimal import Decimal
 import uuid
 import redis.asyncio as aioredis
 from app.redis_client import get_redis
+from app.config import settings
+
+redis_client = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
 
 # ------------------
 def id_for_transaction():
@@ -51,9 +54,11 @@ def validator_transaction(from_card: Card, to_card: Card, user_role: UserRole, a
 
 # ------------------
 async def get_sender_card_with_lock(db, from_card_id, current_user) -> Card:
-    result = await db.execute(select(Card).where(Card.id == from_card_id,
-                                                 Card.user_id == current_user.id).with_for_update())
-    sender_card = result.scalar_one_or_none()
+    result = await db.execute(select(Card)
+                     .where(Card.id == from_card_id,
+                     Card.user_id == current_user.id).with_for_update(of=Card))
+    
+    sender_card = result.unique().scalar_one_or_none()
     if not sender_card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Yuboruvchi karta topilmadi yoki sizga tegishli emas")
     
@@ -61,16 +66,15 @@ async def get_sender_card_with_lock(db, from_card_id, current_user) -> Card:
 
 # ------------------
 async def get_receiver_card_with_lock(db, to_card_number) -> Card:
-    result = await db.execute(select(Card).where(Card.card_number == to_card_number).with_for_update())
-    receiver_card = result.scalar_one_or_none()
+    result = await db.execute(select(Card)
+                     .where(Card.card_number == to_card_number).with_for_update(of=Card))
+    receiver_card = result.unique().scalar_one_or_none()
     if not receiver_card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Qabul qiluvchi karta mavjud emas")
 
     return receiver_card
 
 # ------------------
-redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", decode_responses=True)
-
 async def rate_limiter(request: Request, 
                        current_user: User = Depends(get_current_user)) -> bool:
 
@@ -92,8 +96,6 @@ async def rate_limiter(request: Request,
     return True
 
 # ------------------
-redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", decode_responses=True)
-
 async def check_idempotency(idempotency_key: str = Header(None)):
 
     if not idempotency_key:

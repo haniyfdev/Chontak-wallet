@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request, status, Depends, Query
-from app.models import User, StatusCard
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from app.database import *
@@ -8,15 +7,12 @@ from app.services.auth import get_current_user
 from app.services.transaction import *
 from app.schemas.transaction import *
 from app.models import *
+from app.redis_client import get_redis
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date, timedelta
 from typing import List
-from app.config import settings
 import redis.asyncio as aioredis
-from app.config import get_redis
-
-
 
 
 router = APIRouter()
@@ -26,48 +22,48 @@ router = APIRouter()
 @router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def send_money(tc: TransactionCreate, 
                      current_user: User = Depends(get_current_user),
-                     db: AsyncSession = Depends(get_db),
+                     db: AsyncSession = Depends(get_transaction_db),
                      _limit = Depends(rate_limiter),
                      _idem = Depends(check_idempotency)):
     
-    async with db.begin():
-        from_card = await get_sender_card_with_lock(db, tc.from_card_id, current_user)
-        to_card = await get_receiver_card_with_lock(db, tc.to_card_number)
-        
-        total_to_pay, commission = validator_transaction(
-            from_card=from_card,
-            to_card=to_card,
-            user_role=current_user.role,
-            amount=tc.amount
-        )
 
-        from_card.balance -= total_to_pay
-        to_card.balance += tc.amount
-        
-        # commission to chontak
-        if commission > 0: # if not premium and admin
-            platform = await db.execute(
-                select(Card).where(Card.card_number == settings.PLATFORM_CARD).with_for_update()
-            )                                                                  # row closed temporarily
-            platform_card = platform.scalar_one()
-            platform_card.balance += commission
- 
-        # new transaction
-        new_transaction = Transaction(            
-            from_card_id = from_card.id,
-            to_card_id = to_card.id,
-            amount = tc.amount,
-            commission = commission,
-            type = TypeTransaction.TRANSFER,
-            status = StatusTransaction.SUCCESS,
-            description = tc.description,
-            completed_at = func.now()
-        )
+    from_card = await get_sender_card_with_lock(db, tc.from_card_id, current_user)
+    to_card = await get_receiver_card_with_lock(db, tc.to_card_number)
+    
+    total_to_pay, commission = validator_transaction(
+        from_card=from_card,
+        to_card=to_card,
+        user_role=current_user.role,
+        amount=tc.amount
+    )
 
-        db.add(new_transaction)
-        await db.flush()
-        await db.refresh(new_transaction) 
-        # autocommit
+    from_card.balance -= total_to_pay
+    to_card.balance += tc.amount
+    
+    # commission to chontak
+    if commission > 0: # if not premium and admin
+        platform = await db.execute(
+            select(Card).where(Card.card_number == settings.PLATFORM_CARD).with_for_update(of=Card)
+        )                                                                  # row closed temporarily
+        platform_card = platform.unique().scalar_one()
+        platform_card.balance += commission
+
+    # new transaction
+    new_transaction = Transaction(            
+        from_card_id = from_card.id,
+        to_card_id = to_card.id,
+        amount = tc.amount,
+        commission = commission,
+        type = TypeTransaction.TRANSFER,
+        status = StatusTransaction.SUCCESS,
+        description = tc.description,
+        completed_at = func.now()
+    )
+
+    db.add(new_transaction)
+    await db.flush()
+    await db.refresh(new_transaction) 
+    
 
     return new_transaction
 
@@ -100,7 +96,7 @@ async def get_all_transactions(current_user: User = Depends(get_current_user),
 
     # async count
     count_query = await db.execute(select(func.count()).select_from(query.subquery()))
-    total_checks = count_query.scalar() or 0
+    total_checks = count_query.unique().scalar() or 0
 
     # pagination
     offset = (page - 1) * limit
@@ -108,7 +104,7 @@ async def get_all_transactions(current_user: User = Depends(get_current_user),
 
     # result
     result = await db.execute(query)
-    checks = result.scalars().all()
+    checks = result.unique().scalars().all()
 
     return TransactionListResponse(
         total = total_checks,
@@ -132,7 +128,7 @@ async def get_transaction(transaction_id: str,
                                                       Transaction.to_card.has(user_id = current_user.id)
                                                     )))                                                
 
-    transaction = result.scalar_one_or_none()
+    transaction = result.unique().scalar_one_or_none()
     if not transaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tranzaksiya topilmadi yoki ruhsatingiz yo'q")
 

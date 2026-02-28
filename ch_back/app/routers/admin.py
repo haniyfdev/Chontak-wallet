@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from app.models import User, StatusCard
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, Date
 from sqlalchemy.orm import selectinload
@@ -23,38 +22,37 @@ router = APIRouter()
 @router.post("/deposit", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def deposit(tc: TransactionCreate,
                   current_user: User = Depends(get_current_user),
-                  db: AsyncSession = Depends(get_db)):
+                  db: AsyncSession = Depends(get_transaction_db)):
     
     check_admin(current_user)
-    
+
     depositer = await get_sender_card_with_lock(db, tc.from_card_id, current_user)
     receiver = await get_receiver_card_with_lock(db, tc.to_card_number)
 
-    async with db.begin():
-        total_amount, commission = validator_transaction(
-            from_card=depositer,
-            to_card=receiver,
-            user_role=UserRole.ADMIN,
-            amount=tc.amount
-        )
+    total_amount, commission = validator_transaction(
+        from_card=depositer,
+        to_card=receiver,
+        user_role=UserRole.ADMIN,
+        amount=tc.amount
+    )
 
-        depositer.balance -= total_amount
-        receiver.balance += tc.amount
+    depositer.balance -= total_amount
+    receiver.balance += tc.amount
 
-        new_deposit = Transaction(
-            to_card_id = receiver.id,
-            amount = total_amount,
-            commission = commission,
-            type = TypeTransaction.DEPOSIT,
-            status = StatusTransaction.SUCCESS,
-            description = tc.description,
-            completed_at = func.now()
-        )
+    new_deposit = Transaction(
+        to_card_id = receiver.id,
+        amount = total_amount,
+        commission = commission,
+        type = TypeTransaction.DEPOSIT,
+        status = StatusTransaction.SUCCESS,
+        description = tc.description,
+        completed_at = func.now()
+    )
 
-        db.add(new_deposit)
+    db.add(new_deposit)
 
-        await db.flush()
-        await db.refresh(new_deposit)
+    await db.flush()
+    await db.refresh(new_deposit)
 
     return new_deposit
         
@@ -66,8 +64,10 @@ async def get_platform_card(current_user: User = Depends(get_current_user),
     
     check_admin(current_user)
     
-    result = await db.execute(select(Card).where(Card.card_number == settings.PLATFORM_CARD))
-    card = result.scalar_one_or_none()
+    result = await db.execute(select(Card)
+                     .where(Card.card_number == settings.PLATFORM_CARD).with_for_update(of=Card))
+                            
+    card = result.unique().scalar_one_or_none()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Platform card mavjud emas")
     
@@ -98,7 +98,7 @@ async def get_all_users(current_user: User = Depends(get_current_user),
 
     # .count(users)
     count_users = await db.execute(select(func.count()).select_from(query.subquery()))
-    total_users = count_users.scalar() or 0
+    total_users = count_users.unique().scalar() or 0
 
     # pagination
     offset = (page - 1) * limit
@@ -106,7 +106,7 @@ async def get_all_users(current_user: User = Depends(get_current_user),
 
     # result
     result = await db.execute(query)
-    users = result.scalars().all()
+    users = result.unique().scalars().all()
 
     return UserListResponse(
         total_users = total_users,
@@ -118,7 +118,7 @@ async def get_all_users(current_user: User = Depends(get_current_user),
 
 
 # ------------------------------ 4.endpoint
-@router.get("/one-users/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
+@router.get("/one-users/{user_id}", response_model=UserbyCardResponse, status_code=status.HTTP_200_OK)
 async def get_one_user(user_id: UUID,
                        current_user: User = Depends(get_current_user),
                        db: AsyncSession = Depends(get_db)):
@@ -273,29 +273,27 @@ async def get_one_transaction(transaction_id: str,
 
 
 # ------------------------------ 9.endpoint 
-@router.patch("/status-card/{user_id}", response_model=CardResponse, status_code=status.HTTP_200_OK)
-async def update_satatus_card(user_id: UUID,
-                              action: ActionCard,
+@router.patch("/status-card/{card_id}", response_model=CardResponse, status_code=status.HTTP_200_OK)
+async def update_satatus_card(card_id: UUID,
+                              status: StatusCard,
                               current_user: User = Depends(get_current_user),
                               db: AsyncSession = Depends(get_db)):
     
     check_admin(current_user)
     
-    result = await db.execute(select(Card).where(Card.user_id == user_id))
-    card = result.scalars().first()
+    result = await db.execute(select(Card).where(Card.id == card_id))
+    card = result.unique().scalar_one_or_none()
     if not card:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bu user'da card mavjud emas")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bunday card mavjud emas")
 
-    if action == ActionCard.ACTIVE_FROM_FROZEN:
-        to_active_from_frozen(card)
-    elif action == ActionCard.ACTIVE_FROM_EXPIRED:
-        to_active_from_expired(card)
-    elif action == ActionCard.FROZEN:
-        to_frozen(card)
-    elif action == ActionCard.EXPIRED:
-        to_expired(card)
-    elif action == ActionCard.CLOSED:
+    if status == StatusCard.CLOSED:
         to_closed(card)
+    
+    elif status == StatusCard.FROZEN:
+        to_frozen(card)
+
+    elif status == StatusCard.ACTIVE:
+        to_active(card)
 
     await db.commit()
     await db.refresh(card)
@@ -313,7 +311,7 @@ async def update_user_role(user_id: UUID,
     check_admin(current_user)
 
     result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    user = result.unique().scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bunday user topilmadi")
     
@@ -366,10 +364,6 @@ async def get_verify_balances(current_user: User = Depends(get_current_user),
         func.abs(subq.c.stored_balance - (subq.c.total_incoming - subq.c.total_outgoing)) > 0.01
     )
     
-
-
-
-
     total_invalid_cards = await db.scalar(total_invalid)
    
     total_valid_cards = total_cards - total_invalid_cards
@@ -380,7 +374,7 @@ async def get_verify_balances(current_user: User = Depends(get_current_user),
 
     # result
     result = await db.execute(query)
-    rows = result.all()
+    rows = result.unique().all()
 
     invalid_cards = []
     valid_card_count = 0
@@ -419,7 +413,7 @@ async def get_verify_balance(card_id: UUID,
     check_admin(current_user)
 
     result = await db.execute(select(Card).where(Card.id == card_id))
-    card = result.scalar_one_or_none()
+    card = result.unique().scalar_one_or_none()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bunday karta topilmadi !")
 
@@ -464,11 +458,15 @@ async def get_dashboard(current_user: User = Depends(get_current_user),
     
     sender_transaction = await db.scalar(select(func.coalesce(func.sum(Transaction.amount), 0))
                             .where(func.cast(Transaction.completed_at, Date) == calendar,
-                                   Transaction.from_card.isnot(None)))
+                                   Transaction.from_card_id.isnot(None)))
     # bu ikkisini haqiqiy ko'rinishi withdraval type' bilan keyinchalik qoshiladi
     receiver_transaction = await db.scalar(select(func.coalesce(func.sum(Transaction.amount), 0))
                             .where(func.cast(Transaction.completed_at, Date) == calendar,
-                                   Transaction.to_card.isnot(None)))
+                                   Transaction.to_card_id.isnot(None)))
+
+    total_commission = await db.scalar(select(func.coalesce(func.sum(Transaction.commission), 0))
+                               .where(func.cast(Transaction.completed_at, Date) == calendar,
+                                      Transaction.status == StatusTransaction.SUCCESS))
 
     # math
     count_success = await db.scalar(select(func.count(Transaction.id))
@@ -484,8 +482,8 @@ async def get_dashboard(current_user: User = Depends(get_current_user),
 
     # percent
     if total > 0:
-        percent_success = (count_success / total) * 100
-        percent_failed = (count_failed / total) * 100
+        percent_success = f"{(count_success / total) * 100:.2f}"
+        percent_failed = f"{(count_failed / total) * 100:.2f}"
     else:
         percent_success = 0
         percent_failed = 0
@@ -496,6 +494,7 @@ async def get_dashboard(current_user: User = Depends(get_current_user),
         total_balance = total_balance,
         sender_transactions = sender_transaction,
         receiver_transactions = receiver_transaction,
+        total_commission = total_commission,
         total_count = total,
         success_transfers_count = count_success,
         failed_transfers_count = count_failed,

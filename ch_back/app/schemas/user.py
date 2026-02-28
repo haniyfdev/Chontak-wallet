@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import Optional, List
-from schemas.card import CardResponse
-from schemas.avatar import AvatarResponse
+from app.schemas.card import CardResponse
+from app.schemas.avatar import AvatarResponse
 
 # -------- Request
 class UserCreate(BaseModel):
@@ -29,9 +29,21 @@ class UserUpdate(BaseModel):
 # -------- Response
 class UserResponse(BaseModel):
     id: UUID
-    name: str
+    full_name: str
     phone_number: str
     role: str
+    avatar: Optional[AvatarResponse] = None
+
+    class Config:
+        from_attributes = True
+
+# -------- Response
+class UserbyCardResponse(BaseModel):
+    id: UUID
+    full_name: str
+    phone_number: str
+    role: str
+    cards: List[CardResponse] = []
     avatar: Optional[AvatarResponse] = None
 
     class Config:
@@ -55,11 +67,6 @@ class TokenData(BaseModel):
 
 # -------- Response
 class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-# -------- Response
-class TokenRefreshResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.models import User, StatusCard
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.database import *
@@ -55,7 +54,7 @@ async def create_card(current_user: User = Depends(get_current_user),
 async def get_cards(current_user: User = Depends(get_current_user), 
                     db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Card).where(Card.user_id == current_user.id))
-    cards = result.scalars().all()
+    cards = result.unique().scalars().all()
     return cards # if card return else []
 
 # ------------------------------ 3.endpoint
@@ -64,7 +63,7 @@ async def get_card(card_id: UUID,
                    current_user: User = Depends(get_current_user), 
                    db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Card).where(Card.id == card_id, Card.user_id == current_user.id))
-    card = result.scalar_one_or_none()
+    card = result.unique().scalar_one_or_none()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bu karta topilmadi")
     
@@ -76,7 +75,7 @@ async def frozen_card(card_id: UUID,
                       current_user: User = Depends(get_current_user), 
                       db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Card).where(Card.id == card_id, Card.user_id == current_user.id))
-    card = result.scalar_one_or_none()
+    card = result.unique().scalar_one_or_none()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sizni Cardingiz yo'q")
    
@@ -98,7 +97,7 @@ async def unfrozen_card(card_id: UUID,
                         current_user: User = Depends(get_current_user), 
                         db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Card).where(Card.id == card_id, Card.user_id == current_user.id))
-    card = result.scalar_one_or_none()
+    card = result.unique().scalar_one_or_none()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sizni bunday kartangiz yo'q")
 

@@ -20,8 +20,12 @@ async def get_db():
         finally:
             await db.close()
 
-
-
+# --- get transaction db session
+async def get_transaction_db():
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            yield session
+            
 
 
 

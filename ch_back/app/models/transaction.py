@@ -7,11 +7,11 @@ import enum
 from app.database import Base
 from app.services.transaction import id_for_transaction
 
-class TypeTransaction(enum.Enum):
+class TypeTransaction(str, enum.Enum):
     TRANSFER = "transfer"
     DEPOSIT = "deposit"
 
-class StatusTransaction(enum.Enum):
+class StatusTransaction(str, enum.Enum):
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
@@ -39,6 +39,7 @@ class Transaction(Base):
                                 back_populates="sent_money", uselist=False, lazy="joined")
     to_card = relationship("Card", foreign_keys="[Transaction.to_card_id]", 
                               back_populates="received_money", uselist=False, lazy="joined")
+
 
 
 

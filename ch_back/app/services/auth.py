@@ -11,7 +11,7 @@ from app.config import settings
 from app.models import User, UserRole
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ------------------
@@ -29,7 +29,7 @@ def create_access_token(data: dict, expires_delta: Optional[int] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + timedelta(minutes=expires_delta)
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     copydata.update({"exp": expire})
     encoded_jwt = jwt.encode(copydata, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -61,7 +61,7 @@ async def get_current_user(token:str = Depends(oauth2_scheme), db: AsyncSession 
         raise cred_error  # if token invalid
     
     result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    user = result.unique().scalar_one_or_none()
     if user is None:
         raise cred_error  # if user is None in db
     

@@ -6,7 +6,7 @@ import uuid
 import enum
 from app.database import Base
 
-class UserRole(enum.Enum):
+class UserRole(str, enum.Enum):
     USER = "user"
     PREMIUM = "premium"
     ADMIN = "admin"
@@ -22,8 +22,9 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False, default=UserRole.USER)
     created_at = Column(DateTime(timezone=True), server_default=func.now()) # utc mitaqa vaqti bilan, psql vaqtni oladi
     # relationship
-    cards = relationship("Card", back_populates="user")
-    avatar = relationship("Avatar", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    cards = relationship("Card", back_populates="user", lazy='joined')
+    avatar = relationship("Avatar", back_populates="user", uselist=False, 
+                          lazy='joined', cascade="all, delete-orphan")
     saved_cards = relationship("SavedCard", back_populates="owner_user")
     
 

@@ -12,4 +12,4 @@ class Avatar(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     photo_url = Column(String, nullable=False)
     # relationship
-    user = relationship("User", back_populates="avatar")
+    user = relationship("User", back_populates="avatar", lazy='joined')

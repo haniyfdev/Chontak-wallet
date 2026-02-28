@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status, Query, Depends
-from app.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.database import *
@@ -19,32 +18,33 @@ async def saved_card(scc: SavedCardCreate,
                      get_current: User = Depends(get_current_user), 
                      db: AsyncSession = Depends(get_db)):
     
-    async with db.begin():
-        # SavedCard object
-        result = await db.execute(select(SavedCard).where(SavedCard.owner_user_id == get_current.id,
-                                                          SavedCard.card_number == scc.card_number))
-        card = result.scalar_one_or_none()
-        if card:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bu karta save qilingan")
 
-        # Card object
-        resultt = await db.execute(select(Card).where(Card.card_number == scc.card_number))
-        cardd = resultt.scalar_one_or_none()
-        if cardd:
-            holder_name = cardd.owner_name
-        else:
-            holder_name = scc.card_holder_name
+    # SavedCard object
+    result = await db.execute(select(SavedCard).where(SavedCard.owner_user_id == get_current.id,
+                                                        SavedCard.card_number == scc.card_number))
+    card = result.unique().scalar_one_or_none()
+    if card:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bu karta save qilingan")
 
-        new_save_card = SavedCard(
-            owner_user_id = get_current.id,
-            card_number = scc.card_number,
-            card_holder_name = holder_name,
-            alias = scc.alias
-        )
+    # Card object
+    resultt = await db.execute(select(Card).where(Card.card_number == scc.card_number))
+    cardd = resultt.unique().scalar_one_or_none()
+    if cardd:
+        holder_name = cardd.owner_name
+    else:
+        holder_name = scc.card_holder_name
 
-        db.add(new_save_card)
-        await db.flush()
-        await db.refresh(new_save_card)
+    new_save_card = SavedCard(
+        owner_user_id = get_current.id,
+        card_number = scc.card_number,
+        card_holder_name = holder_name,
+        alias = scc.alias
+    )
+
+    db.add(new_save_card)
+    await db.commit()
+    await db.flush()
+    await db.refresh(new_save_card)
 
     return new_save_card
 
