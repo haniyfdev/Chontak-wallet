@@ -28,7 +28,6 @@ def validator_transaction(from_card: Card, to_card: Card, user_role: UserRole, a
 
     # for freemium user;
     if user_role == UserRole.USER: 
-        commission = amount * Decimal("0.01")
         total_to_pay = amount + commission
         max_limit = 2000000
 

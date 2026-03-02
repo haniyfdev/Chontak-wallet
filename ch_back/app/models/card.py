@@ -28,6 +28,7 @@ class Card(Base):
     user = relationship("User", back_populates="cards", uselist=False, lazy="joined")
     sent_money = relationship("Transaction", foreign_keys="[Transaction.from_card_id]", back_populates="from_card")
     received_money = relationship("Transaction", foreign_keys="[Transaction.to_card_id]", back_populates="to_card")
+    subscriptions = relationship("Subscription", back_populates="card")
 
     @property
     def owner_name(self) -> str:

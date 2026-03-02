@@ -78,6 +78,7 @@ async def get_platform_card(current_user: User = Depends(get_current_user),
 @router.get("/all-users", response_model=UserListResponse, status_code=status.HTTP_200_OK)
 async def get_all_users(current_user: User = Depends(get_current_user),
                         db: AsyncSession = Depends(get_db),
+                        search_role: UserRole = Query(None),
                         search_name: str = Query(None, min_length=3, max_length=60),
                         search_number: str = Query(None, min_length=3, max_length=16),
                         page: int = Query(1, ge=1),
@@ -87,7 +88,7 @@ async def get_all_users(current_user: User = Depends(get_current_user),
     # Basic validation
     check_admin(current_user)
     
-    query = select(User).where(User.role == UserRole.USER)
+    query = select(User).where(User.role != UserRole.ADMIN)
 
     # Searching
     if search_name:
@@ -95,6 +96,9 @@ async def get_all_users(current_user: User = Depends(get_current_user),
     
     if search_number: 
         query = query.where(User.phone_number.ilike(f"%{search_number}%"))
+    
+    if search_role:
+        query = query.where(User.role == search_role)
 
     # .count(users)
     count_users = await db.execute(select(func.count()).select_from(query.subquery()))

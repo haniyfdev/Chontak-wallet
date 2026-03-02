@@ -26,6 +26,6 @@ class User(Base):
     avatar = relationship("Avatar", back_populates="user", uselist=False, 
                           lazy='joined', cascade="all, delete-orphan")
     saved_cards = relationship("SavedCard", back_populates="owner_user")
-    
+    subscriptions = relationship("Subscription", back_populates="user")
 
 
