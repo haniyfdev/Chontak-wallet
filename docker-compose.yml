@@ -6,9 +6,9 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: chontak_db
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/dat
+      - pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -16,32 +16,22 @@ services:
     ports:
       - "6379:6379"
     restart: always
-  
+
   backend:
-    build:  .
+    build:
+      context: ./ch_back
+      dockerfile: Dockerfile
     container_name: ch_back
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ./ch_back:/code
     env_file:
       - .env
     depends_on:
       - db
       - redis
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-
-
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir /code
 
 volumes:
   pgdata:
-
-
-
-
-
-
-
-
-  

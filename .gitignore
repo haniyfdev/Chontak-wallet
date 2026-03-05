@@ -1,4 +1,18 @@
-venv/
+# Python
 __pycache__/
 *.pyc
 .env
+.venv/
+env/
+
+# Docker
+pgdata/
+
+# Frontend (Node)
+node_modules/
+dist/
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db

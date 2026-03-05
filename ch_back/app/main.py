@@ -50,5 +50,5 @@ async def health_check():
         "status": "running",
         "app": "Chontak Wallet",
         "version": "1.1.0"
+    
     }
-
