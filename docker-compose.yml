@@ -19,13 +19,13 @@ services:
 
   backend:
     build:
-      context: ./ch_back
+      context: ./back  
       dockerfile: Dockerfile
     container_name: ch_back
     ports:
       - "8000:8000"
     volumes:
-      - ./ch_back:/code
+      - ./back:/code 
     env_file:
       - .env
     depends_on:

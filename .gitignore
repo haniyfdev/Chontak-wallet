@@ -1,18 +1,53 @@
-# Python
+# --- Python & Backend ---
 __pycache__/
 *.pyc
-.env
-.venv/
+*.pyo
+*.pyd
+.Python
 env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.env
+.flaskenv
 
-# Docker
+# --- Docker & Database ---
 pgdata/
+db_data/
+.docker/
+docker-compose.override.yml
 
-# Frontend (Node)
+# --- Frontend (Node.js) ---
 node_modules/
 dist/
+build/
 .eslintcache
+.stylelintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
 
-# OS
+# --- IDE & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# --- OS Specific ---
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+desktop.ini
+
+# --- App Specific (Cho'ntak) ---
+# Agar loyihangizda loglar yoki yuklangan rasmlar bo'lsa:
+logs/
+*.log
+media/
+storage/
