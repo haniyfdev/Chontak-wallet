@@ -23,8 +23,8 @@ async def shutdown_event():
 # ----------------------
 app.add_middleware(
     CORSMiddleware,
-    origins = [
-    "https://ch-front-7bmo.onrender.com",
+    allow_origins = [
+    "https://chontak.onrender.com",
     "http://localhost:5173",         
     "http://127.0.0.1:5173",
 ],
