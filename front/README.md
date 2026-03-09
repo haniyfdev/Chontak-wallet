@@ -36,7 +36,7 @@ export default {
 ## API URL o'zgartirish:
 src/api/index.js faylida:
 ```js
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = "https://chontak-wallet.onrender.com";
 ```
 Backend boshqa portda ishlasa, shu yerni o'zgartiring.
 

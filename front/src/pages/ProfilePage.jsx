@@ -3,7 +3,7 @@ import { authAPI, avatarAPI } from "../api";
 import useAuthStore from "../store/authStore";
 import { User, Lock, Camera, Eye, EyeOff, Loader, Check, X, Crown } from "lucide-react";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "https://chontak-wallet.onrender.com";
 
 export default function ProfilePage() {
   const { user, fetchMe } = useAuthStore();

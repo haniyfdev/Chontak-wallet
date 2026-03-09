@@ -7,7 +7,7 @@ import {
   Bell, ChevronDown, ShieldCheck
 } from "lucide-react";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "https://chontak-wallet.onrender.com";
 
 const navItems = [
   { to: "/dashboard",    icon: LayoutDashboard, label: "Dashboard" },

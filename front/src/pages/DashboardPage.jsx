@@ -7,7 +7,7 @@ import {
   Plus, Eye, EyeOff, ArrowUpRight, ArrowDownLeft, Wifi
 } from "lucide-react";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "https://chontak-wallet.onrender.com";
 function fmt(v) { return Number(v || 0).toLocaleString("uz-UZ"); }
 function fmtDate(d) {
   if (!d) return "";
