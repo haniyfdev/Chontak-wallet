@@ -1,0 +1,16 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - main  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Backend
+        run: curl -X POST ${{ secrets.RENDER_BACK_DEPLOY_HOOK }}
+
+      - name: Deploy Frontend
+        run: curl -X POST ${{ secrets.RENDER_FRONT_DEPLOY_HOOK }}
