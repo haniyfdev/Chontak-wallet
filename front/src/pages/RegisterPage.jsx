@@ -35,8 +35,8 @@ export default function RegisterPage() {
         <div style={{ width: "72px", height: "72px", borderRadius: "20px", background: "rgba(74,222,128,0.15)", border: "2px solid rgba(74,222,128,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
           <Check size={32} color="#4ade80" />
         </div>
-        <h2 style={{ fontSize: "24px", fontWeight: 800, color: "white", marginBottom: "8px" }}>Muvaffaqiyatli ro'yxatdan o'tdingiz!</h2>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Login sahifasiga yo'naltirilmoqda...</p>
+        <h2 style={{ fontSize: "24px", fontWeight: 800, color: "white", marginBottom: "8px" }}>Xush kelibsiz! 🎉</h2>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Asosiy sahifaga o'tilmoqda...</p>
       </div>
     </div>
   );
