@@ -15,18 +15,37 @@ export default function RegisterPage() {
   const phoneDigits = form.phone.replace(/\D/g, "").slice(0, 9);
   const displayPhone = phoneDigits.replace(/(\d{2})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4");
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.full_name.trim()) { setError("Ism familiya kiriting"); return; }
     if (phoneDigits.length < 9) { setError("To'liq telefon raqam kiriting"); return; }
     if (form.password.length < 6) { setError("Parol kamida 6 ta belgidan iborat bo'lsin"); return; }
     if (form.password !== form.confirm) { setError("Parollar mos kelmadi"); return; }
+    
     setError("");
-    const result = await register({ full_name: form.full_name, phone_number: `+998${phoneDigits}`, password: form.password });
+    
+    // 1. Ro'yxatdan o'tkazish
+    const result = await register({ 
+      full_name: form.full_name, 
+      phone_number: `+998${phoneDigits}`, 
+      password: form.password 
+    });
+
     if (result.success) {
-      setSuccess(true);
-      setTimeout(() => navigate("/dashboard"), 2500);
-    } else setError(result.message);
+      // 2. AVTOMATIK LOGIN (Xuddi shu ma'lumotlar bilan)
+      // useAuthStore ichidagi login funksiyasini chaqiramiz
+      const loginResult = await useAuthStore.getState().login(`+998${phoneDigits}`, form.password);
+      
+      if (loginResult.success) {
+        setSuccess(true);
+        setTimeout(() => navigate("/dashboard"), 2500);
+      } else {
+        // Agar login kutilmaganda xato bersa, login sahifasiga yuboramiz
+        navigate("/login");
+      }
+    } else {
+      setError(result.message);
+    }
   };
 
   if (success) return (
