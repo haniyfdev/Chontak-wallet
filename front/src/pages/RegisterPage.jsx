@@ -140,7 +140,7 @@ export default function RegisterPage() {
               <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.45)", marginBottom: "8px", letterSpacing: "0.04em", textTransform: "uppercase" }}>Ism Familiya</label>
               <div style={{ position: "relative" }}>
                 <User size={14} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <input type="text" placeholder="Kamol Yusupov" value={form.full_name}
+                <input type="text" placeholder="Ism-Sharifingizni kiriting:" value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
                   style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "14px", padding: "14px 14px 14px 40px", fontSize: "14px", color: "white", outline: "none", boxSizing: "border-box" }} />
               </div>
