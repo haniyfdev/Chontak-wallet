@@ -24,7 +24,6 @@ const handleSubmit = async (e) => {
     
     setError("");
     
-    // 1. Ro'yxatdan o'tkazish
     const result = await register({ 
       full_name: form.full_name, 
       phone_number: `+998${phoneDigits}`, 
@@ -32,15 +31,12 @@ const handleSubmit = async (e) => {
     });
 
     if (result.success) {
-      // 2. AVTOMATIK LOGIN (Xuddi shu ma'lumotlar bilan)
-      // useAuthStore ichidagi login funksiyasini chaqiramiz
       const loginResult = await useAuthStore.getState().login(`+998${phoneDigits}`, form.password);
       
       if (loginResult.success) {
         setSuccess(true);
-        setTimeout(() => navigate("/dashboard"), 2500);
+        navigate("/dashboard"); // ← setTimeout olib tashlandi!
       } else {
-        // Agar login kutilmaganda xato bersa, login sahifasiga yuboramiz
         navigate("/login");
       }
     } else {
@@ -55,7 +51,7 @@ const handleSubmit = async (e) => {
           <Check size={32} color="#4ade80" />
         </div>
         <h2 style={{ fontSize: "24px", fontWeight: 800, color: "white", marginBottom: "8px" }}>Xush kelibsiz! 🎉</h2>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Asosiy sahifaga o'tilmoqda...</p>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}></p>
       </div>
     </div>
   );
