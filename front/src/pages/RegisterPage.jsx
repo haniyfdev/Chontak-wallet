@@ -25,7 +25,7 @@ export default function RegisterPage() {
     const result = await register({ full_name: form.full_name, phone_number: `+998${phoneDigits}`, password: form.password });
     if (result.success) {
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 2500);
+      setTimeout(() => navigate("/dashboard"), 2500);
     } else setError(result.message);
   };
 
