@@ -25,7 +25,3 @@ async def get_transaction_db():
     async with AsyncSessionLocal() as session:
         async with session.begin():
             yield session
-            
-
-
-
